@@ -6,7 +6,7 @@
 *
 * 
 *
-*                                       (c) BG57IV3 2010-2014
+*                                       (c) BG57IV3#gmail.com 2010-2014
 *                                       https://github.com/as2120/ZToolKit
 *
 *
@@ -15,11 +15,10 @@
 #pragma once
 
 /*
-
 History:
-//z 2014-11-17 15:06:37 L.44 '32003 BG57IV3@XCL T1139317397.K.F1711917868
 0.00.01
-    1. 从mpc中摘录出来，新增了对这些编译器的定义 vc 2013/update4 2005 2003 2002 vc6sp6/vc6 vc5
+    //z 2014-11-17 15:06:37 L.44 '32003 BG57IV3@XCL T1139317397.K.F1711917868
+    1. add support for vc 2013/update4 2005 2003 2002 vc6sp6/vc6 vc5
 */
 
 #if defined(_MSC_VER)
