@@ -1,0 +1,196 @@
+
+http://www.codeguru.com/cpp/v-s/devstudio_macros/add-ins/article.php/c14453/Auto-Increment-the-Version-Number-after-Each-Build-in-a-Visual-Studio-Project.htm
+
+Overview
+
+As you know, Windows Executable Binary Files (EXE, DLL, and so forth) have their own version information.
+This information consists of four positions with two bytes each, such as "xx.xx.xxxxx.xx" (it means major.minor.buildno.extend).
+Already, there are several standalone tools or VS macros to implement automatic version numbering. But, these were not enough to implement more dynamic version numbering.
+
+So finally, I tried to make a version number build tool myself to support more enhanced functions and to be more useful.
+This tool, 'VERBUILD ' will help you manage a rather more complex version numbering system more easily.
+
+Features
+
+    Increments the version number on each build.
+    Supports two types of build numbers (daily basis and normal digits).
+    Supports overflow shifting.
+    Maximum and minimum positions are available.
+    An individual increment option is available for file version or product version.
+    There is an option to add a null string to the string version.
+    The method creates 'VersionNo.h' and uses .rc2/.
+
+Options
+Sample code
+
+    VERBUILD file   <format>  [options...]
+    VERBUILD @file [<format>] [options...]
+
+    file: Version header file to update. The @file list file switch specifies one file on each line for example:
+
+        c:\project1\versionno.h
+        c:\project2\versionno.h=*.*.*.+
+
+    <format>: x.x.x.x specifies the version number changes. x is one of following:
+        *: Keep current position + : increment position by one
+        digits: Set position to this value. for example, *.*.71.+
+    -l: The specified list files
+    -d<baseyear>: Daily basis mode. Increments by date indexing from base year, as in -d2005
+    -x<fFpP>: f,F: (F)ile version that it uses to increment.
+        p or P: (P)roduct version to increment on.
+        f,p (individual increment): F,P (set by full version).
+    -b<format>: Sets minimum version value for beginning.
+    -e<format>: Sets maximum version value for ending. The format is xx.xx.xxxxx.xx, where each digit's length is a free size. for example, -e15.10.99999.20 -e200.99.1000.300 -b1.0.0.0
+    -s: Overflow shift is turned on
+    -n[buildno]: Verify daily basis build number and convert to date/time. for example, if the version number is 15.0.2304.26, to verify 2304 you would use verbuild -n2304 -d2005. The result is '2007-11-01'.
+    -u: Adds a null to the string version.
+    -c: Checks file existence and creates it if it does not exist.
+    -t[delay]: No update if not reached in [delay] seconds. The default is 5 seconds. use -t0 for no delay.
+    -r[ymd]: Sets a term to reset extend positions in daily basis. every (y)ear,(m)onth or (d)ay. eg. -ry for annually.(updated)
+    -v: Verbose
+    -h or -?: For more detailed help, use your VS.NET VS2005 Project!
+
+Examples
+
+Each version's positions consists of major.minor.buildno.extend and simply to A.B.C.D,
+
+    verbuild VersionNo.h -c: Creates an initial VersionNo.h file if it does not exist already.
+    verbuild VersionNo.h *.*.*.+ -d2005 -xFp -b1.0.0.0 -e10.10.2310.12 -s: The daily basis from 2005(-d2005), minimum buildno position is 1.0.0.0(-b), and the maximum build number is 10.10.2310.12(-e). only increasing the part 'D' positions of the A.B.C.D Format(*.*.*.+), the file version is equal to the full version(-xF). the product version is individually self increasing (-xp). If it is in the overflow minimum or maximum positions, shifts each positions of A.B.C.D(-s) but,in daily basis mode,the part 'C' positions is fixed by daily information. When 'D' positions are overflowing,'B' will be increased by skip 'C' if in daily basis mode.
+    verbuild VersionNo.h *.*.*.+ -xFp -b1.0.0.0 -e10.10.2310.12 -s: Normal build number positions mode (part 'C' positions) are in effect.
+    verbuild -n2303 -d2005: Decodes the build number (part 'C' positions) created by daily basis mode with the -d option.
+
+Two Types of Build Number Positions
+
+The Build Number means the 'C' positions of the 'A.B.C.D' Format. The first type is normal digits fill with any sequential numeric. the second is daily basis with five fixed digits represented, as in 'YYDDD'.
+
+YY means year index from the base year. DDD means a day index from January, 01 of the current year(01/01).
+If you use VERBUILD with the -d[baseyear] option, the build number is created as the daily basis type.
+
+For daily basis mode, you can use the -d option.
+
+    The result version number looks like '10.1.2303.5' with the -d option. 2303 is the day information.
+    The result version number looks like '10.1.1000.5' without the -d option. 1000 is just a sequential numeric without any more means.
+
+In daily basis mode, the 'C' positions "2303" means:
+
+    2 --> '02' as YY: 2007 if base year is 2005 [0 - 99].
+    303 --> as DDD: day index from the first day of the year [0 - 365].
+    To decode 2303, use verbuild -n2303 -d2005. It outputs '2007-10-31'.
+
+Overflow and Shift
+
+If, with the shift option and overflow part in the 'D' positions, shift as follows.
+for example, the maximum value of part 'D' (extend positions) is 5 set by -e99.99.2000.5 option:
+
+    In daily basis mode: '10.1.2303.5' -> '10.2.2303.0'
+    In normal mode: '10.1.1000.5' -> '10.1.1001.0'
+
+As a result, if each position that is a part of A.B.C.D meets its own maximum and then overflows, it will be set to a minimum value set by the -b option and shift 1 toward the left part positions. But, by using Overflows and without the Shift option, it keeps its current positions.
+Using These Options in a My Visual Studio Project
+
+First of all, either create your Project or open an existing Project.
+Step 1. Open the .rc file, cut the VERSIONINFO block, and paste it into the .rc2 file.
+
+    The .rc2 file may be located in the RES Folder in your Project directory.
+    If .rc2 does not exist, you create it manually (blank) by using any text editor.
+    If the newly created .rc2 is not a member of Project files, add it to your Project.
+
+Step 2. Edit the .rc2 file with VERBUILD preprocessors
+
+    Above the 'VS_VERSION_INFO VERSIONINFO' line in the .rc2 file, add #include "VersionNo.h" (even if it does not exist yet).
+    Change version data with VERSION_FILE, VERSION_PRODUCT.
+    Change string version data with VERSION_FILESTR, VERSION_PRODUCTSTR.
+
+        ////////////////////////////////////////////////////////////
+        // Version
+        //
+        #include "VersionNo.h"                    <---- Add here!
+        VS_VERSION_INFO VERSIONINFO
+        FILEVERSION VERSION_FILE                    <---- Edit here!
+        PRODUCTVERSION VERSION_PRODUCT              <---- Edit Here!
+           .
+           .
+           VALUE "FileVersion", VERSION_FILESTR   <---- Edit here!
+           .
+           VALUE "ProductVersion",                <---- Edit here!
+           VERSION_PRODUCTSTR
+           .
+           .
+           BLOCK "VarFileInfo"
+           BEGIN
+              VALUE "Translation", 0x412, 1200
+           END
+        END
+
+Step 3. Create the initial 'VersionNo.h' in the same directory as your Project.
+
+    Run at a command line prompt as:
+
+        'verbuild VersionNo.h -c'
+
+    You will find the VersionNo.h file in your Project directory.
+
+Step 4. Add VERBUILD to the Project's Build-Event
+
+    In the Project's setting, select All Configurations. In the Command Line field under Post-Build Event (it will called after the build), add as Examples or with your modified parameters:
+
+        verbuild VersionNo.h *.*.*.+ -d2005 -xFp -b1.0.0.0
+           -e10.30.9999.100 -s
+
+    [3.png]
+    For a Pre-Build Event, you can add a command line such as 'verbuild VersionNo.h -c' if you want. It is not necessary if the VersionNo.h file already exists when you run it once. With the -c option, the out message is:
+
+        "Checking Version Number File ...VersionNo.h exists"
+
+    After each build of your project, you can see something that looks like the following:
+
+    [4.png]
+
+Step 5. Use version information in your source files by adding #include "VersionNo.h"
+
+See the demo project sample code.
+
+As result, the output 'VersionNo.h" file looks like this:
+
+    #ifndef VERSIONNO__H
+    #define VERSIONNO__H
+       #define VERSION_FULL           1.0.2304.27
+       #define VERSION_BASEYEAR       2005
+       #define VERSION_DATE           "2007-11-01"
+       #define VERSION_TIME           "16:02:54"
+       #define VERSION_MAJOR          1
+       #define VERSION_MINOR          0
+       #define VERSION_BUILDNO        2304
+       #define VERSION_EXTEND         27
+       #define VERSION_FILE           1,0,2304,27
+       #define VERSION_PRODUCT        1,0,2304,27
+       #define VERSION_FILESTR        "1,0,2304,27\0"
+       #define VERSION_PRODUCTSTR     "1,0,2304,27\0"
+    #endif
+
+Additional Information
+
+In ResourceView, by pressing Ctrl+Shift+E, right-click and select the resource include menu. When the Resource Includes dialog is shown, Add these lines to the Compile-time directives:
+
+    #include "VersionNo.h"
+    #include "res\MyProject.rc2"
+
+or
+
+    #include "res\MyProject.rc2"
+
+Including the VersionNo.h file always causes a Post-Build Event because the VersionNo.h file is updated by VERBUILD and VS IDE, detecting the modification directly even if any resources were not changed. (It increments the version on each build.) But, by not including VersionNo.h here (only included in the .rc2 file), each build will not work until any resources are changed, even if VersionNo.h was changed already (increments the version when the resource changed).
+Summary
+
+You can use this automatic version numbering system in any Visual Studio C++ Project instead by using VS macros. Also, you can modify the version numbering routines for your purposes.
+
+Regards,
+
+KRKIM, http://www.yeamaec.com
+References and Hints from Others
+
+    http://support.microsoft.com/kb/q237870/
+    http://www.codeproject.com/tools/rcstamp.asp
+    http://www.codeproject.com/dotnet/build_versioning.asp
+    http://blogs.msdn.com/vcblog/archive/2007/09/04/what-compiler-does-the-compiler-team-use-and-decoding-version-numbers.aspx
+
